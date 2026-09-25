@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { OrbState, STATE_COLORS } from "@/lib/edith-theme";
+import { OrbState, STATE_COLORS } from "@/lib/jarvis-theme";
 
 // Server ve client-de trigonometriya ile hesablanan uzun onluq ededler
 // fergli sekilde stringe cevrile bilir (hydration mismatch-in sebebi budur).

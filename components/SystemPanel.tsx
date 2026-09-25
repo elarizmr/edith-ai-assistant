@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { OrbState, STATE_COLORS, STATE_LABELS } from "@/lib/edith-theme";
+import { OrbState, STATE_COLORS, STATE_LABELS } from "@/lib/jarvis-theme";
 import GaugeRing from "./GaugeRing";
 
 interface SystemPanelProps {
@@ -34,7 +34,7 @@ export default function SystemPanel({ state = "idle" }: SystemPanelProps) {
             SYSTEM SETTINGS
           </span>
           <span className="text-[9px] font-mono" style={{ color: `${color}c0` }}>
-            E.D.I.T.H.
+            J.A.R.V.I.S
           </span>
         </div>
 
@@ -100,7 +100,7 @@ export default function SystemPanel({ state = "idle" }: SystemPanelProps) {
           {/* Bottom info */}
           <div className="pt-3 border-t" style={{ borderColor: `${color}18` }}>
             <p className="text-[8px] leading-4 text-white/25 font-mono">
-              E.D.I.T.H. CORE SYSTEM
+              J.A.R.V.I.S CORE SYSTEM
               <br />
               VOICE INTERFACE ACTIVE
               <br />

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { OrbState, STATE_COLORS } from "@/lib/edith-theme";
+import { OrbState, STATE_COLORS } from "@/lib/jarvis-theme";
 
 interface ConversationPanelProps {
   transcript: string;
@@ -48,7 +48,7 @@ export default function ConversationPanel({
             >
               <div>
                 <p className="text-[9px] font-mono mb-1" style={{ color: `${color}b0` }}>
-                  E.D.I.T.H.
+                  J.A.R.V.I.S
                 </p>
                 <div
                   className="border p-3"

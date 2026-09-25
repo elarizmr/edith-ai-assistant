@@ -7,8 +7,7 @@ import HudBackground from "@/components/HudBackground";
 import SystemPanel from "@/components/SystemPanel";
 import ConversationPanel from "@/components/ConversationPanel";
 import TopBar from "@/components/TopBar";
-import BottomDock from "@/components/BottomDock";
-import { OrbState } from "@/lib/edith-theme";
+import { OrbState } from "@/lib/jarvis-theme";
 import { useWakeWord } from "@/hooks/useWakeWord";
 
 type Lang = "tr-TR" | "en-US" | "az-AZ";
@@ -24,13 +23,15 @@ export default function Home() {
   const streamRef = useRef<MediaStream | null>(null);
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
-  const autoContinueRef = useRef(false);
   const didSpeakRef = useRef(false); // ← YENİ: recording ərzində real səs aşkarlanıbmı?
 
   // Söhbət yaddaşı — Gemini-yə hər sorğuda göndərilir ki,
   // əvvəlki mesajları xatırlasın.
   type HistoryItem = { role: "user" | "model"; content: string };
-  const HISTORY_KEY = "edith_chat_history";
+  // QEYD: açar adı dəyişdi (əvvəl "ev_chat_history" idi). Köhnə istifadəçilərdə
+  // localStorage-də köhnə açarla yaddaş qalıb, bu isə sıfırdan başlayacaq.
+  // İstəsəniz köhnə açarı da oxuyub köçürmək üçün ayrıca miqrasiya əlavə edə bilərik.
+  const HISTORY_KEY = "jarvis_chat_history";
   const historyRef = useRef<HistoryItem[]>([]);
 
   // =========================================================
@@ -73,7 +74,6 @@ export default function Home() {
         }
 
         utterance.onend = () => {
-          autoContinueRef.current = true;
           setState("idle");
         };
 
@@ -129,7 +129,6 @@ export default function Home() {
       audio.onended = () => {
         URL.revokeObjectURL(audioUrl);
         ttsAudioRef.current = null;
-        autoContinueRef.current = true;
         setState("idle");
       };
 
@@ -387,6 +386,12 @@ export default function Home() {
 
       let lastSpeechTime = Date.now();
       let userStartedSpeaking = false;
+      let sustainedFrames = 0;
+
+      // Klaviatura/siçan kliki kimi qısa səs-küy pikləri (30-80ms) real
+      // danışıq (davamlı) ilə qarışmasın deyə, "danışıq" statusunu yalnız
+      // həcm ard-arda bir neçə frame boyu (≈150ms) yüksək qalanda veririk.
+      const REQUIRED_SUSTAINED_FRAMES = 9; // rAF ~60fps zamanı ≈150ms
 
       const detectVoice = () => {
         if (
@@ -407,11 +412,19 @@ export default function Home() {
         }
 
         const volume = Math.sqrt(sum / dataArray.length);
-        const isSpeaking = volume > 0.025;
+        const isLoudEnough = volume > 0.025;
+
+        if (isLoudEnough) {
+          sustainedFrames++;
+        } else {
+          sustainedFrames = 0;
+        }
+
+        const isSpeaking = sustainedFrames >= REQUIRED_SUSTAINED_FRAMES;
 
         if (isSpeaking) {
           userStartedSpeaking = true;
-          didSpeakRef.current = true; // ← real səs aşkarlandı
+          didSpeakRef.current = true; // ← real (davamlı) səs aşkarlandı
 
           lastSpeechTime = Date.now();
 
@@ -445,40 +458,10 @@ export default function Home() {
   };
 
   // =========================================================
-  // BOTTOM DOCK ACTIONS
-  // =========================================================
-
-  const handleToggleMute = () => {
-    window.speechSynthesis.cancel();
-
-    if (ttsAudioRef.current) {
-      ttsAudioRef.current.pause();
-      ttsAudioRef.current = null;
-    }
-
-    if (state === "speaking") {
-      setState("idle");
-    }
-  };
-
-  const handleReset = () => {
-    setTranscript("");
-    historyRef.current = [];
-
-    try {
-      localStorage.removeItem(HISTORY_KEY);
-    } catch (error) {
-      console.error("History reset error:", error);
-    }
-  };
-
-  // =========================================================
   // PAUSE / RESUME HƏLİ (dayandırma + davam etdirmə əməliyyatları)
   // =========================================================
 
   const applyPause = () => {
-    autoContinueRef.current = false;
-
     if (silenceTimerRef.current) {
       clearTimeout(silenceTimerRef.current);
       silenceTimerRef.current = null;
@@ -495,35 +478,12 @@ export default function Home() {
 
     setState("idle");
 
-    console.log("E.D.I.T.H. PAUSED");
+    console.log("J.A.R.V.I.S PAUSED");
   };
 
   const applyResume = () => {
-    console.log("E.D.I.T.H. RESUMED");
+    console.log("J.A.R.V.I.S RESUMED");
     // useWakeWord avtomatik olaraq !paused gördükdə yenidən aktiv olacaq.
-  };
-
-  // In-app (BottomDock) düyməsi
-  const handleTogglePause = () => {
-    setPaused((prev) => {
-      const next = !prev;
-
-      if (next) {
-        applyPause();
-      } else {
-        applyResume();
-      }
-
-      // Electron main process-i də xəbərdar et (tray label, log və s. üçün)
-      const edith = (window as any).edith;
-      if (next) {
-        edith?.pauseEDITH?.();
-      } else {
-        edith?.resumeEDITH?.();
-      }
-
-      return next;
-    });
   };
 
   // =========================================================
@@ -531,13 +491,13 @@ export default function Home() {
   // =========================================================
 
   useEffect(() => {
-    const edith = (window as any).edith;
+    const electronBridge = (window as any).jarvis;
 
-    if (!edith?.onEDITHState) {
+    if (!electronBridge?.onState) {
       return;
     }
 
-    const unsubscribe = edith.onEDITHState((data: { state: string }) => {
+    const unsubscribe = electronBridge.onState((data: { state: string }) => {
       if (data.state === "paused") {
         setPaused((prev) => {
           if (!prev) {
@@ -560,13 +520,13 @@ export default function Home() {
   }, []);
 
   // =========================================================
-  // WAKE WORD — "Hey Edith"
+  // WAKE WORD — "Hey Jarvis"
   // =========================================================
 
   const { error: wakeWordError } = useWakeWord({
     enabled: state === "idle" && !paused,
     onWake: () => {
-      (window as any).edith?.showWindow?.();
+      (window as any).jarvis?.showWindow?.();
       startListening();
     },
   });
@@ -578,31 +538,24 @@ export default function Home() {
   }, [wakeWordError]);
 
   // =========================================================
-  // AUTO-CONTINUE — cavab bitəndə mikrofon özü açılsın
+  // AUTO-CONTINUE — SÖNDÜRÜLÜB.
+  // Əvvəllər cavab bitəndə mikrofon özü açılırdı. İndi isə cavab
+  // bitəndə sadəcə "idle" halına qayıdır və növbəti dəfə YALNIZ
+  // "Hey Jarvis" wake word-ü ilə yenidən dinləməyə başlayır.
   // =========================================================
-
-  useEffect(() => {
-    if (state === "idle" && autoContinueRef.current && !paused) {
-      autoContinueRef.current = false;
-      const timer = setTimeout(() => {
-        startListening();
-      }, 400);
-      return () => clearTimeout(timer);
-    }
-  }, [state, paused]);
 
   // =========================================================
   // ELECTRON GLOBAL TOGGLE (Cmd+Shift+E)
   // =========================================================
 
   useEffect(() => {
-    const edith = (window as any).edith;
+    const electronBridge = (window as any).jarvis;
 
-    if (!edith?.onToggleListening) {
+    if (!electronBridge?.onToggleListening) {
       return;
     }
 
-    const unsubscribe = edith.onToggleListening(() => {
+    const unsubscribe = electronBridge.onToggleListening(() => {
       startListening();
     });
 
@@ -692,7 +645,7 @@ export default function Home() {
       {/* HUD BACKGROUND */}
       <HudBackground state={state} />
 
-      {/* TOP BAR — tarix / EDITH saat / CPU-MEM gauge */}
+      {/* TOP BAR — tarix / J.A.R.V.I.S saat / CPU-MEM gauge */}
       <div>
         <TopBar state={state} />
       </div>
@@ -793,7 +746,7 @@ export default function Home() {
         <ConversationPanel transcript={transcript} state={state} />
       </div>
 
-      {/* CENTER E.D.I.T.H */}
+      {/* CENTER J.A.R.V.I.S */}
       <div
         className="
           absolute
@@ -809,19 +762,6 @@ export default function Home() {
         <div onClick={startListening} className="cursor-pointer">
           <VoiceOrb state={state} />
         </div>
-      </div>
-
-      {/* BOTTOM DOCK — mic / mute / reset / settings */}
-      <div>
-        <BottomDock
-          state={state}
-          bottomOffset={150}
-          paused={paused}
-          onToggleMic={startListening}
-          onToggleMute={handleToggleMute}
-          onTogglePause={handleTogglePause}
-          onReset={handleReset}
-        />
       </div>
 
       {/* BOTTOM COMMAND / RESPONSE */}
@@ -853,7 +793,7 @@ export default function Home() {
             <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_10px_#22d3ee]" />
 
             <span className="font-mono text-[10px] tracking-[0.3em] text-cyan-400/70">
-              E.D.I.T.H. RESPONSE
+              J.A.R.V.I.S RESPONSE
             </span>
           </div>
 
@@ -876,7 +816,7 @@ export default function Home() {
           text-white/20
         "
       >
-        E.D.I.T.H. // ONLINE
+        J.A.R.V.I.S // ONLINE
       </div>
 
       {/* LANGUAGE */}

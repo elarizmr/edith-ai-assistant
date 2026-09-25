@@ -3,11 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * "Hey Edith" / "Edith wake up" wake-word dinləyicisi — Vosk (offline,
+ * "Hey Jarvis" wake-word dinləyicisi — Vosk (offline,
  * pulsuz, hesab lazım deyil) ilə işləyir. Model brauzerdə WASM olaraq
  * yüklənir, mikrofon davamlı açıq qalır, amma yalnız `enabled` true
- * olanda (məs. state === "idle") tanınan mətn wake-phrase yoxlamasından
- * keçir.
+ * olanda tanınan mətn wake-phrase yoxlamasından keçir.
  *
  * QEYD: Client Component-dən çağırılmalıdır ("use client").
  */
@@ -15,9 +14,8 @@ import { useEffect, useRef, useState } from "react";
 interface UseWakeWordOptions {
   enabled: boolean;
   onWake: () => void;
-  /** public/ qovluğundakı .tar.gz model faylının yolu */
   modelPath?: string;
-  /** Bu sözlərdən biri tanınan mətndə olsa, wake tetiklənir (kiçik hərflə) */
+
   wakePhrases?: string[];
   /** Ard-arda tetiklənmənin qarşısını almaq üçün minimum aralıq (ms) */
   cooldownMs?: number;
@@ -28,14 +26,18 @@ export function useWakeWord({
   onWake,
   modelPath = "/models/vosk-model-small-en-us-0.15.tar.gz",
   wakePhrases = [
-    "hey edith",
-    "edith wake up",
-    "edith, wake up",
-    "wake up edith",
-    "edith",
-    "eddie",
-    "edit",
-    "eat it",
+    "hey jarvis",
+    "jarvis wake up",
+    "jarvis, wake up",
+    "wake up jarvis",
+    "jarvis",
+    // Vosk kiçik ingilis fonem modeli "jarvis" sözünü bəzən
+    // bunlara yaxın tanıya bilər — tolerantlıq üçün əlavə edilib
+    "jarves",
+    "garvis",
+    "charvis",
+    "jarvus",
+    "harvis",
   ],
   cooldownMs = 3000,
 }: UseWakeWordOptions) {

@@ -1,24 +1,24 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
-contextBridge.exposeInMainWorld("edith", {
+contextBridge.exposeInMainWorld("jarvis", {
   // SHOW WINDOW
   showWindow: () => {
     ipcRenderer.send("show-window");
   },
 
-  // PAUSE EDITH
-  pauseEDITH: () => {
-    ipcRenderer.send("edith-pause");
+  // PAUSE J.A.R.V.I.S
+  pause: () => {
+    ipcRenderer.send("jarvis-pause");
   },
 
-  // RESUME EDITH
-  resumeEDITH: () => {
-    ipcRenderer.send("edith-resume");
+  // RESUME J.A.R.V.I.S
+  resume: () => {
+    ipcRenderer.send("jarvis-resume");
   },
 
   // TOGGLE LISTENING
   toggleListening: () => {
-    ipcRenderer.send("toggle-edith-listening");
+    ipcRenderer.send("toggle-jarvis-listening");
   },
 
   // GLOBAL TOGGLE
@@ -34,16 +34,16 @@ contextBridge.exposeInMainWorld("edith", {
     };
   },
 
-  // EDITH STATE
-  onEDITHState: (callback) => {
+  // J.A.R.V.I.S STATE
+  onState: (callback) => {
     const handler = (event, data) => {
       callback(data);
     };
 
-    ipcRenderer.on("edith-state", handler);
+    ipcRenderer.on("jarvis-state", handler);
 
     return () => {
-      ipcRenderer.removeListener("edith-state", handler);
+      ipcRenderer.removeListener("jarvis-state", handler);
     };
   },
 });

@@ -1,7 +1,12 @@
 import { exec } from "child_process";
 import { promisify } from "util";
+import { addMemory } from "@/lib/memory";
+import { addEvent } from "@/lib/calendar";
 
 const execAsync = promisify(exec);
+
+// Tək istifadəçili sistem olduğu üçün sabit userId
+export const USER_ID = process.env.JARVIS_USER_ID || "elariz";
 
 // =========================================================
 // TƏHLÜKƏSİZLİK — açıq şəkildə destruktiv əmrlərin qarşısını al
@@ -100,6 +105,42 @@ export const toolDeclarations = [
       required: ["level"],
     },
   },
+  {
+    name: "remember_fact",
+    description:
+      "Elariz haqqında bir fakt, üstünlük və ya qeydi uzunmüddətli yaddaşa yazır. İstifadəçi 'bunu yadında saxla', 'unutma ki...', 'mən ... sevirəm' kimi bir şey desə, bu tool-u çağır.",
+    parameters: {
+      type: "object",
+      properties: {
+        content: {
+          type: "string",
+          description: "Yadda saxlanılacaq fakt, qısa və aydın cümlə ilə",
+        },
+      },
+      required: ["content"],
+    },
+  },
+  {
+    name: "add_calendar_event",
+    description:
+      "Elarizin planına yeni tapşırıq/görüş əlavə edir. İstifadəçi 'sabah saat 3-də görüşüm var', 'bunu təqvimə yaz' kimi bir şey desə, bu tool-u çağır.",
+    parameters: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "Tapşırığın/görüşün adı" },
+        date: {
+          type: "string",
+          description:
+            "Tarix və saat ISO formatında (məs: 2026-09-14T15:00:00). Əgər il verilməyibsə cari ili istifadə et.",
+        },
+        description: {
+          type: "string",
+          description: "Əlavə qeyd (opsional)",
+        },
+      },
+      required: ["title", "date"],
+    },
+  },
 ];
 
 // =========================================================
@@ -146,6 +187,20 @@ export async function executeTool(name: string, args: any): Promise<string> {
         const level = Math.max(0, Math.min(100, Number(args.level)));
         await execAsync(`osascript -e "set volume output volume ${level}"`);
         return `Səs ${level}%-ə tənzimləndi.`;
+      }
+
+      case "remember_fact": {
+        await addMemory(USER_ID, args.content);
+        return `Yadda saxladım: "${args.content}"`;
+      }
+
+      case "add_calendar_event": {
+        const date = new Date(args.date);
+        if (isNaN(date.getTime())) {
+          return "Tarix formatı düzgün deyil, tapşırıq əlavə olunmadı.";
+        }
+        await addEvent(USER_ID, args.title, date, args.description);
+        return `Təqvimə əlavə etdim: "${args.title}" — ${date.toLocaleString("az-AZ")}`;
       }
 
       default:

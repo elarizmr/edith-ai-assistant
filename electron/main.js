@@ -13,7 +13,7 @@ let mainWindow = null;
 let tray = null;
 
 // ------------------------------------
-// CREATE EDITH WINDOW
+// CREATE J.A.R.V.I.S WINDOW
 // ------------------------------------
 
 function createWindow() {
@@ -31,7 +31,7 @@ function createWindow() {
     frame: true,
     titleBarStyle: "default",
 
-    title: "E.D.I.T.H.",
+    title: "J.A.R.V.I.S",
 
     resizable: true,
     maximizable: true,
@@ -85,7 +85,7 @@ function createWindow() {
 }
 
 // ------------------------------------
-// SHOW / FOCUS EDITH
+// SHOW / FOCUS J.A.R.V.I.S
 // ------------------------------------
 
 function showAndFocusWindow() {
@@ -121,7 +121,7 @@ app.whenReady().then(() => {
   createWindow();
 
   // ----------------------------------
-  // START EDITH WITH macOS
+  // START J.A.R.V.I.S WITH macOS
   // ----------------------------------
 
   app.setLoginItemSettings({
@@ -167,28 +167,28 @@ app.whenReady().then(() => {
   });
 
   // ----------------------------------
-  // PAUSE EDITH
+  // PAUSE J.A.R.V.I.S
   // ----------------------------------
 
-  ipcMain.on("edith-pause", () => {
-    console.log("E.D.I.T.H. PAUSED");
+  ipcMain.on("jarvis-pause", () => {
+    console.log("J.A.R.V.I.S PAUSED");
 
     if (mainWindow) {
-      mainWindow.webContents.send("edith-state", {
+      mainWindow.webContents.send("jarvis-state", {
         state: "paused",
       });
     }
   });
 
   // ----------------------------------
-  // RESUME EDITH
+  // RESUME J.A.R.V.I.S
   // ----------------------------------
 
-  ipcMain.on("edith-resume", () => {
-    console.log("E.D.I.T.H. RESUMED");
+  ipcMain.on("jarvis-resume", () => {
+    console.log("J.A.R.V.I.S RESUMED");
 
     if (mainWindow) {
-      mainWindow.webContents.send("edith-state", {
+      mainWindow.webContents.send("jarvis-state", {
         state: "running",
       });
     }
@@ -198,7 +198,7 @@ app.whenReady().then(() => {
   // TOGGLE LISTENING
   // ----------------------------------
 
-  ipcMain.on("toggle-edith-listening", () => {
+  ipcMain.on("toggle-jarvis-listening", () => {
     if (!mainWindow) return;
 
     mainWindow.webContents.send("toggle-listening");
@@ -212,11 +212,11 @@ app.whenReady().then(() => {
 
   tray = new Tray(iconPath);
 
-  tray.setToolTip("E.D.I.T.H.");
+  tray.setToolTip("J.A.R.V.I.S");
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: "Show EDITH",
+      label: "Show J.A.R.V.I.S",
 
       click: () => {
         showAndFocusWindow();
@@ -224,7 +224,7 @@ app.whenReady().then(() => {
     },
 
     {
-      label: "Hide EDITH",
+      label: "Hide J.A.R.V.I.S",
 
       click: () => {
         if (mainWindow) {
@@ -238,11 +238,11 @@ app.whenReady().then(() => {
     },
 
     {
-      label: "Pause EDITH",
+      label: "Pause J.A.R.V.I.S",
 
       click: () => {
         if (mainWindow) {
-          mainWindow.webContents.send("edith-state", {
+          mainWindow.webContents.send("jarvis-state", {
             state: "paused",
           });
         }
@@ -250,11 +250,11 @@ app.whenReady().then(() => {
     },
 
     {
-      label: "Resume EDITH",
+      label: "Resume J.A.R.V.I.S",
 
       click: () => {
         if (mainWindow) {
-          mainWindow.webContents.send("edith-state", {
+          mainWindow.webContents.send("jarvis-state", {
             state: "running",
           });
         }

@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import GaugeRing from "./GaugeRing";
-import { OrbState, STATE_COLORS, STATE_LABELS } from "@/lib/edith-theme";
+import { OrbState, STATE_COLORS, STATE_LABELS } from "@/lib/jarvis-theme";
 
 interface TopBarProps {
   state?: OrbState;
@@ -93,10 +93,10 @@ export default function TopBar({
         {/* Center: wordmark + clock */}
         <div className="flex flex-col items-center">
           <span
-            className="text-sm font-mono font-bold tracking-[0.5em]"
+            className="text-sm font-mono font-bold tracking-[0.4em]"
             style={{ color, textShadow: `0 0 14px ${color}` }}
           >
-            E.D.I.T.H.
+            J.A.R.V.I.S
           </span>
           <div className="flex items-center gap-2 mt-1">
             <motion.span

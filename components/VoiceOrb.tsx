@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { OrbState, STATE_COLORS, STATE_LABELS } from "@/lib/edith-theme";
+import { OrbState, STATE_COLORS, STATE_LABELS } from "@/lib/jarvis-theme";
 import GaugeRing from "./GaugeRing";
 
 // Server ve client-de trigonometriya ile hesablanan uzun onluq ededler
