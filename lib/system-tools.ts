@@ -5,12 +5,10 @@ import { addEvent } from "@/lib/calendar";
 
 const execAsync = promisify(exec);
 
-// Tək istifadəçili sistem olduğu üçün sabit userId
+
 export const USER_ID = process.env.JARVIS_USER_ID || "elariz";
 
-// =========================================================
-// TƏHLÜKƏSİZLİK — açıq şəkildə destruktiv əmrlərin qarşısını al
-// =========================================================
+
 
 const DANGEROUS_PATTERNS: RegExp[] = [
   /rm\s+-rf\s+\/(?!\S)/i, // rm -rf /

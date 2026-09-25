@@ -1,10 +1,6 @@
 export type OrbState = "idle" | "listening" | "thinking" | "speaking";
 
-/**
- * Single source of truth for the state -> color mapping.
- * Every HUD component imports this so the whole interface
- * shifts color together (background, orb, side panels, dock).
- */
+
 export const STATE_COLORS: Record<OrbState, string> = {
   idle: "#3b82f6", // blue
   listening: "#22d3ee", // cyan

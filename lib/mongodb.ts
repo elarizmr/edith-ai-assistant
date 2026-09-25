@@ -28,7 +28,7 @@ if (process.env.NODE_ENV === "development") {
 
 export async function getDb(): Promise<Db> {
   const client = await clientPromise;
-  return client.db("jarvis"); // DB adını istədiyin kimi dəyiş
+  return client.db("jarvis"); 
 }
 
 export default clientPromise;

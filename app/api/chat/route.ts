@@ -123,12 +123,7 @@ export async function POST(req: NextRequest) {
     const langHint = LANG_HINT[lang] || "";
     const messageWithHint = `${langHint}${message}`;
 
-    // ---------------------------------------------------------
-    // ÖZÜMÜZ İDARƏ EDİLƏN CONTENTS MASSİVİ
-    // (chat.sendMessage() ƏVƏZİNƏ generateContent() istifadə edirik
-    // ki, function response-un rolunu özümüz "user" kimi təyin edək,
-    // SDK-nın köhnəlmiş "function" rolunu avtomatik seçməsinin qarşısını alaq)
-    // ---------------------------------------------------------
+    
     const contents: Content[] = [
       ...safeHistory,
       { role: "user", parts: [{ text: messageWithHint }] },

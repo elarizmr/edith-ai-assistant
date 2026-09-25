@@ -2,22 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 
-/**
- * "Hey Jarvis" wake-word dinləyicisi — Vosk (offline,
- * pulsuz, hesab lazım deyil) ilə işləyir. Model brauzerdə WASM olaraq
- * yüklənir, mikrofon davamlı açıq qalır, amma yalnız `enabled` true
- * olanda tanınan mətn wake-phrase yoxlamasından keçir.
- *
- * QEYD: Client Component-dən çağırılmalıdır ("use client").
- */
-
 interface UseWakeWordOptions {
   enabled: boolean;
   onWake: () => void;
   modelPath?: string;
 
   wakePhrases?: string[];
-  /** Ard-arda tetiklənmənin qarşısını almaq üçün minimum aralıq (ms) */
+  
   cooldownMs?: number;
 }
 
@@ -31,8 +22,7 @@ export function useWakeWord({
     "jarvis, wake up",
     "wake up jarvis",
     "jarvis",
-    // Vosk kiçik ingilis fonem modeli "jarvis" sözünü bəzən
-    // bunlara yaxın tanıya bilər — tolerantlıq üçün əlavə edilib
+   
     "jarves",
     "garvis",
     "charvis",
@@ -74,9 +64,7 @@ export function useWakeWord({
     }
   };
 
-  // Model + recognizer + mikrofon axını BIR DEFE qurulur ve tetbiq
-  // omru boyu davam edir (davamli dinleme). `enabled` ise yalniz
-  // gelen setleri wake-phrase yoxlamasindan kecirib-kecirmemeyi idare edir.
+  
   useEffect(() => {
     let cancelled = false;
 
@@ -99,10 +87,7 @@ export function useWakeWord({
 
         if (cancelled) return;
 
-        // AudioContext-i recognizer-den evvel yaradiriq ki, onun real
-        // sample rate-ini KaldiRecognizer-e ote bilek (kitabxananin
-        // TypeScript tipi buna gore sampleRate parametri teleb edir:
-        // `new (sampleRate: number, grammar?: string)`).
+       
         const stream = await navigator.mediaDevices.getUserMedia({
           video: false,
           audio: {
@@ -139,9 +124,7 @@ export function useWakeWord({
 
         recognizerRef.current = recognizer;
 
-        // ScriptProcessorNode deprecated olsa da, vosk-browser-in
-        // resmi nümunesi bunu istifade edir ve butun brauzerlerde
-        // (Electron/Chromium daxil) stabil isleyir.
+       
         const processor = audioContext.createScriptProcessor(4096, 1, 1);
         processorRef.current = processor;
 
