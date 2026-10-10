@@ -20,6 +20,7 @@
     "mongodb": "^7.6.0",
     "msedge-tts": "^2.0.7",
     "next": "16.3.0",
+    "next-auth": "^5.0.0-beta.32",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "vosk-browser": "^0.0.8"
