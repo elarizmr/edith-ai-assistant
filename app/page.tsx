@@ -26,6 +26,8 @@ export default function Home() {
   const streamRef = useRef<MediaStream | null>(null);
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
+  // iOS Safari: toxunuş anında "açılmış" Audio elementi (sonra gecikmə ilə çalmaq üçün)
+  const unlockedAudioRef = useRef<HTMLAudioElement | null>(null);
   const didSpeakRef = useRef(false); // ← YENİ: recording ərzində real səs aşkarlanıbmı?
 
   // Söhbət yaddaşı — Gemini-yə hər sorğuda göndərilir ki,
@@ -135,7 +137,10 @@ export default function Home() {
 
       const audioBlob = await res.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
-      const audio = new Audio(audioUrl);
+
+      // iOS: toxunuşda "açılmış" elementi işlət, yoxdursa yenisini yarat
+      const audio = unlockedAudioRef.current ?? new Audio();
+      audio.src = audioUrl;
 
       ttsAudioRef.current = audio;
 
@@ -295,6 +300,15 @@ export default function Home() {
   // =========================================================
 
   const startListening = async () => {
+    // iOS Safari: səsi toxunuş anında "aç" ki, sonra gecikmə ilə çala bilək
+    if (!unlockedAudioRef.current) {
+      const a = new Audio();
+      a.src =
+        "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+      a.play().catch(() => {});
+      unlockedAudioRef.current = a;
+    }
+
     // Pause aktivdirsə heç bir şəkildə dinləməyə başlama
     if (paused) {
       return;
