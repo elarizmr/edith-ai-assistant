@@ -61,6 +61,8 @@ You also have long-term memory about Elariz and access to his daily schedule, sh
 Use this information naturally when relevant — do not just repeat it verbatim unless asked.
 ${memoryContext}
 ${todayContext}
+
+Elariz's recent emails are provided below in this prompt. You CAN read them. Summarize from this section only. If the section says the Gmail connection failed, say so honestly in one short sentence. NEVER claim you lack permission and NEVER offer to open Gmail in a browser. When summarizing emails, mention only the 3 most important ones, in one sentence each.
 ${emailContext}
 
 If Elariz tells you something worth remembering (a fact, preference, or note about himself),
@@ -68,6 +70,7 @@ call the remember_fact tool. If he mentions a meeting, task, or event with a dat
 call the add_calendar_event tool.
 
 Keep your responses short, concise, and natural for text-to-speech.
+Never use markdown, asterisks, bullet points or lists. Write plain spoken sentences only.
 `;
 }
 
@@ -123,7 +126,6 @@ export async function POST(req: NextRequest) {
     const langHint = LANG_HINT[lang] || "";
     const messageWithHint = `${langHint}${message}`;
 
-    
     const contents: Content[] = [
       ...safeHistory,
       { role: "user", parts: [{ text: messageWithHint }] },

@@ -332,13 +332,20 @@ export default function VoiceOrb({ state = "idle" }: { state?: OrbState }) {
 
       {/* ================================================= */}
       {/* SIDE READOUTS (Iron Man style mini gauges) */}
+      {/* Çox kiçik ekranlarda (sm-dən aşağı) gizlədilir */}
       {/* ================================================= */}
 
-      <div className="absolute" style={{ left: -70, top: "50%", transform: "translateY(-50%)" }}>
+      <div
+        className="absolute hidden sm:block"
+        style={{ left: -70, top: "50%", transform: "translateY(-50%)" }}
+      >
         <GaugeRing value={isActive ? 100 : 62} size={58} strokeWidth={2.5} color={color} label="CORE" />
       </div>
 
-      <div className="absolute" style={{ right: -70, top: "50%", transform: "translateY(-50%)" }}>
+      <div
+        className="absolute hidden sm:block"
+        style={{ right: -70, top: "50%", transform: "translateY(-50%)" }}
+      >
         <GaugeRing
           value={state === "thinking" ? 88 : 100}
           size={58}

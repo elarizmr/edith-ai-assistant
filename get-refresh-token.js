@@ -1,4 +1,4 @@
-// Bu, BİR DƏFƏLİK işlədiləcək scriptdir — refresh token almaq üçün.
+// BİR DƏFƏLİK işlədilən script: Gmail və Calendar üçün refresh token almaq.
 // İşlətmək: node get-refresh-token.js
 // (əvvəlcə: npm install googleapis dotenv)
 
@@ -9,7 +9,8 @@ const url = require("url");
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const REDIRECT_URI = "http://localhost:3001/oauth2callback";
+const PORT = 3001;
+const REDIRECT_URI = `http://localhost:${PORT}/oauth2callback`;
 
 if (!CLIENT_ID || !CLIENT_SECRET) {
   console.error("❌ .env.local-da GOOGLE_CLIENT_ID və GOOGLE_CLIENT_SECRET tapılmadı");
@@ -20,39 +21,63 @@ const oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_U
 
 const authUrl = oauth2Client.generateAuthUrl({
   access_type: "offline", // refresh token almaq üçün MÜTLƏQ lazımdır
-  prompt: "consent", // hər dəfə yeni refresh token vermək üçün
+  prompt: "consent", // hər dəfə yeni refresh token verməsi üçün
   scope: [
-    "https://www.googleapis.com/auth/gmail.readonly", // yalnız oxumaq üçün
+    "https://www.googleapis.com/auth/gmail.readonly", // maillərı oxumaq
+    "https://www.googleapis.com/auth/calendar", // təqvimi oxumaq və yazmaq
   ],
 });
 
-console.log("\n👉 Bu linki brauzerdə aç və Google hesabına icazə ver:\n");
+console.log("\n👉 Bu linki brauzerdə aç və Gmail-i oxuyacaq hesabı seç:\n");
 console.log(authUrl);
 console.log("\nGözlənilir...\n");
 
 const server = http
   .createServer(async (req, res) => {
-    const qs = new url.URL(req.url, "http://localhost:3001").searchParams;
-    const code = qs.get("code");
+    const parsed = new url.URL(req.url, `http://localhost:${PORT}`);
 
+    // favicon və s. kənar sorğuları ignor et
+    if (parsed.pathname !== "/oauth2callback") {
+      res.statusCode = 404;
+      res.end();
+      return;
+    }
+
+    const error = parsed.searchParams.get("error");
+    if (error) {
+      res.end(`Xəta: ${error}. Terminala bax.`);
+      console.error(`❌ Google xəta qaytardı: ${error}`);
+      server.close();
+      return;
+    }
+
+    const code = parsed.searchParams.get("code");
     if (!code) {
       res.end("Xəta: kod tapılmadı.");
       return;
     }
 
-    res.end("✅ Uğurlu oldu! Terminala qayıda bilərsən, pəncərəni bağlaya bilərsən.");
+    res.end("✅ Uğurlu oldu! Terminala qayıda bilərsən, bu pəncərəni bağlaya bilərsən.");
     server.close();
 
     try {
       const { tokens } = await oauth2Client.getToken(code);
-      console.log("\n🎉 REFRESH TOKEN ALINDI:\n");
-      console.log(tokens.refresh_token);
-      console.log("\nBunu .env.local-a əlavə et:");
+
+      if (!tokens.refresh_token) {
+        console.error(
+          "\n⚠️ Refresh token gəlmədi. Bu hesab bu tətbiqə əvvəl icazə verib.\n" +
+            "myaccount.google.com/permissions səhifəsindən Jarvis-i sil və skripti yenidən işlət.\n"
+        );
+        return;
+      }
+
+      console.log("\n🎉 REFRESH TOKEN ALINDI.\n");
+      console.log("Bunu .env.local-a yaz (köhnə GOOGLE_REFRESH_TOKEN sətrini əvəz et):\n");
       console.log(`GOOGLE_REFRESH_TOKEN=${tokens.refresh_token}\n`);
     } catch (err) {
       console.error("❌ Token alınarkən xəta:", err.message);
     }
   })
-  .listen(3001, () => {
-    console.log("Lokal server 3001 portunda gözləyir (Google-un geri qayıtması üçün)...");
+  .listen(PORT, () => {
+    console.log(`Lokal server ${PORT} portunda gözləyir (Google-un geri qayıtması üçün)...`);
   });

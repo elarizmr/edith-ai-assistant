@@ -64,14 +64,14 @@ export default function TopBar({
       initial={{ opacity: 0, y: -16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
-      className="fixed top-5 left-1/2 -translate-x-1/2 w-[min(1100px,92vw)] hidden md:block pointer-events-auto"
+      className="fixed top-3 md:top-5 left-1/2 -translate-x-1/2 w-[min(1100px,92vw)] pointer-events-auto z-40"
     >
       <div
-        className="relative border bg-[#030914]/75 backdrop-blur-xl px-5 py-3 flex items-center justify-between"
+        className="relative border bg-[#030914]/75 backdrop-blur-xl px-3 py-2 md:px-5 md:py-3 flex items-center justify-center md:justify-between"
         style={{ borderColor: `${color}30` }}
       >
-        {/* Left: date block */}
-        <div className="flex items-center gap-3">
+        {/* Left: date block (yalnız masaüstü) */}
+        <div className="hidden md:flex items-center gap-3">
           <div
             className="w-11 h-11 rounded-full border flex items-center justify-center"
             style={{ borderColor: `${color}50` }}
@@ -93,7 +93,7 @@ export default function TopBar({
         {/* Center: wordmark + clock */}
         <div className="flex flex-col items-center">
           <span
-            className="text-sm font-mono font-bold tracking-[0.4em]"
+            className="text-xs md:text-sm font-mono font-bold tracking-[0.25em] md:tracking-[0.4em]"
             style={{ color, textShadow: `0 0 14px ${color}` }}
           >
             J.A.R.V.I.S
@@ -105,7 +105,7 @@ export default function TopBar({
               animate={{ opacity: [0.3, 1, 0.3] }}
               transition={{ duration: 1.4, repeat: Infinity }}
             />
-            <span className="font-mono text-lg tabular-nums text-white/85">
+            <span className="font-mono text-base md:text-lg tabular-nums text-white/85">
               {time}
             </span>
             <span
@@ -117,8 +117,8 @@ export default function TopBar({
           </div>
         </div>
 
-        {/* Right: system gauges */}
-        <div className="flex items-center gap-4">
+        {/* Right: system gauges (yalnız masaüstü) */}
+        <div className="hidden md:flex items-center gap-4">
           <div className="text-right leading-tight mr-1">
             <p className="text-[9px] tracking-[0.2em] text-white/40 font-mono">
               {location}

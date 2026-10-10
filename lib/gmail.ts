@@ -28,70 +28,48 @@ function getHeader(headers: any[], name: string): string {
 
 // Bugün gələn emailləri gətir
 export async function getTodayEmails(maxResults = 10): Promise<EmailSummary[]> {
-  const profile = await gmail.users.getProfile({ userId: "me" });
-  console.log(`📧 Autentifikasiya olunan Gmail hesabı: ${profile.data.emailAddress}`);
-
   const listRes = await gmail.users.messages.list({
     userId: "me",
-    q: `newer_than:1d`,
+    q: "newer_than:1d",
     maxResults,
   });
-
-  console.log(`📧 Gmail sorğusu: newer_than:1d — xam nəticə sayı: ${listRes.data.messages?.length || 0}`);
-
-  // MÜVƏQQƏTİ TEST: heç bir filtr olmadan cəmi neçə mesaj var?
-  const testRes = await gmail.users.messages.list({ userId: "me", maxResults: 5 });
-  console.log(`🧪 TEST (filtrsiz) nəticə sayı: ${testRes.data.messages?.length || 0}, resultSizeEstimate: ${testRes.data.resultSizeEstimate}`);
-
-  // MÜVƏQQƏTİ TEST 2: bu mesajların həqiqi tarixi nədir?
-  if (testRes.data.messages && testRes.data.messages.length > 0) {
-    for (const m of testRes.data.messages.slice(0, 3)) {
-      const d = await gmail.users.messages.get({
-        userId: "me",
-        id: m.id!,
-        format: "metadata",
-        metadataHeaders: ["Date", "Subject"],
-      });
-      const dateHeader = d.data.payload?.headers?.find((h) => h.name === "Date")?.value;
-      const subjHeader = d.data.payload?.headers?.find((h) => h.name === "Subject")?.value;
-      console.log(`🧪 TEST mesaj — internalDate: ${d.data.internalDate}, Date header: ${dateHeader}, Subject: ${subjHeader}`);
-    }
-  }
 
   const messages = listRes.data.messages || [];
   if (messages.length === 0) return [];
 
-  const emails: EmailSummary[] = [];
+  // Mesajların detalını paralel çək (ardıcıl döngüdən daha sürətlidir)
+  const emails = await Promise.all(
+    messages
+      .filter((msg) => msg.id)
+      .map(async (msg) => {
+        const detail = await gmail.users.messages.get({
+          userId: "me",
+          id: msg.id!,
+          format: "metadata",
+          metadataHeaders: ["From", "Subject", "Date"],
+        });
 
-  for (const msg of messages) {
-    if (!msg.id) continue;
+        const headers = detail.data.payload?.headers || [];
 
-    const detail = await gmail.users.messages.get({
-      userId: "me",
-      id: msg.id,
-      format: "metadata",
-      metadataHeaders: ["From", "Subject", "Date"],
-    });
-
-    const headers = detail.data.payload?.headers || [];
-
-    emails.push({
-      id: msg.id,
-      from: getHeader(headers, "From"),
-      subject: getHeader(headers, "Subject"),
-      snippet: detail.data.snippet || "",
-      date: getHeader(headers, "Date"),
-    });
-  }
+        return {
+          id: msg.id!,
+          from: getHeader(headers, "From"),
+          subject: getHeader(headers, "Subject"),
+          snippet: detail.data.snippet || "",
+          date: getHeader(headers, "Date"),
+        } as EmailSummary;
+      })
+  );
 
   return emails;
 }
 
-// System prompt-a əlavə ediləcək mətn formatı
+// System prompt-a əlavə ediləcək mətn
 export async function getTodayEmailsContext(): Promise<string> {
   try {
     const emails = await getTodayEmails(10);
-    console.log(`📧 Gmail: ${emails.length} email tapıldı bugün üçün`);
+    console.log(`📧 Gmail: ${emails.length} email tapıldı`);
+
     if (emails.length === 0) {
       return "\nBu gün Elarizin gmail qutusuna yeni email gəlməyib.\n";
     }
@@ -103,6 +81,11 @@ export async function getTodayEmailsContext(): Promise<string> {
     return `\nElarizin bugün gələn emailləri:\n${lines}\n`;
   } catch (error: any) {
     console.error("Gmail oxuma xətası:", error.message);
-    return "";
+
+    if (String(error.message).includes("invalid_grant")) {
+      return "\nGmail-ə qoşulmaq mümkün olmadı: giriş tokeni bitib (invalid_grant). Elariz tokeni yeniləməlidir. Mailləri oxuya bilmədiyini bu səbəblə izah et, məzmun uydurma.\n";
+    }
+
+    return `\nGmail-ə qoşulmaq mümkün olmadı (texniki xəta: ${error.message}). Mailləri oxuya bilmədiyini bu səbəblə izah et, məzmun uydurma.\n`;
   }
 }

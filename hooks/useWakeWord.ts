@@ -20,6 +20,7 @@ export function useWakeWord({
     "hey jarvis",
     "jarvis wake up",
     "jarvis, wake up",
+    "wake up daddy's home" ,
     "wake up jarvis",
     "jarvis",
    

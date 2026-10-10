@@ -18,6 +18,9 @@ export default function Home() {
   const [lang, setLang] = useState<Lang>("tr-TR");
   const [paused, setPaused] = useState(false);
 
+  // Telefon ekranı aşkarlanır (wake word telefonda söndürülür)
+  const [isMobile, setIsMobile] = useState(false);
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
@@ -40,6 +43,20 @@ export default function Home() {
   // Click-through is intentionally disabled.
   // This is a normal interactive Electron window, so all buttons
   // must receive mouse clicks normally.
+
+  // =========================================================
+  // MOBILE DETECTION
+  // =========================================================
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    setIsMobile(mq.matches);
+
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", onChange);
+
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   // =========================================================
   // ELEVENLABS TTS (yedek: browser TTS)
@@ -520,11 +537,11 @@ export default function Home() {
   }, []);
 
   // =========================================================
-  // WAKE WORD — "Hey Jarvis"
+  // WAKE WORD — "Hey Jarvis" (telefonda söndürülüb, orbə toxunmaq kifayətdir)
   // =========================================================
 
   const { error: wakeWordError } = useWakeWord({
-    enabled: state === "idle" && !paused,
+    enabled: state === "idle" && !paused && !isMobile,
     onWake: () => {
       (window as any).jarvis?.showWindow?.();
       startListening();
@@ -630,12 +647,29 @@ export default function Home() {
   // UI
   // =========================================================
 
+  const langButtonClass = (active: boolean) => `
+    px-2
+    md:px-3
+    py-1
+    rounded
+    font-mono
+    text-xs
+    border
+    transition-all
+    cursor-pointer
+    ${
+      active
+        ? "border-cyan-400 text-cyan-400 bg-cyan-950/50 shadow-[0_0_15px_rgba(34,211,238,0.25)]"
+        : "border-white/20 text-white/40 hover:text-white hover:border-white/40"
+    }
+  `;
+
   return (
     <main
       className="
         relative
-        w-screen
-        h-screen
+        w-full
+        h-dvh
         overflow-hidden
         select-none
         bg-black
@@ -659,8 +693,10 @@ export default function Home() {
       <div
         className="
           absolute
-          top-6
-          right-6
+          top-[4.5rem]
+          right-3
+          md:top-6
+          md:right-6
           z-50
           flex
           gap-2
@@ -669,21 +705,7 @@ export default function Home() {
         <button
           type="button"
           onClick={() => setLang("tr-TR")}
-          className={`
-            px-3
-            py-1
-            rounded
-            font-mono
-            text-xs
-            border
-            transition-all
-            cursor-pointer
-            ${
-              lang === "tr-TR"
-                ? "border-cyan-400 text-cyan-400 bg-cyan-950/50 shadow-[0_0_15px_rgba(34,211,238,0.25)]"
-                : "border-white/20 text-white/40 hover:text-white hover:border-white/40"
-            }
-          `}
+          className={langButtonClass(lang === "tr-TR")}
         >
           TR
         </button>
@@ -691,21 +713,7 @@ export default function Home() {
         <button
           type="button"
           onClick={() => setLang("en-US")}
-          className={`
-            px-3
-            py-1
-            rounded
-            font-mono
-            text-xs
-            border
-            transition-all
-            cursor-pointer
-            ${
-              lang === "en-US"
-                ? "border-cyan-400 text-cyan-400 bg-cyan-950/50 shadow-[0_0_15px_rgba(34,211,238,0.25)]"
-                : "border-white/20 text-white/40 hover:text-white hover:border-white/40"
-            }
-          `}
+          className={langButtonClass(lang === "en-US")}
         >
           EN
         </button>
@@ -713,38 +721,12 @@ export default function Home() {
         <button
           type="button"
           onClick={() => setLang("az-AZ")}
-          className={`
-            px-3
-            py-1
-            rounded
-            font-mono
-            text-xs
-            border
-            transition-all
-            cursor-pointer
-            ${
-              lang === "az-AZ"
-                ? "border-cyan-400 text-cyan-400 bg-cyan-950/50 shadow-[0_0_15px_rgba(34,211,238,0.25)]"
-                : "border-white/20 text-white/40 hover:text-white hover:border-white/40"
-            }
-          `}
+          className={langButtonClass(lang === "az-AZ")}
         >
           AZ
         </button>
       </div>
-
-      {/* LEFT / CONVERSATION PANEL */}
-      <div
-        className="
-          absolute
-          left-6
-          top-1/2
-          -translate-y-1/2
-          z-20
-        "
-      >
-        <ConversationPanel transcript={transcript} state={state} />
-      </div>
+     
 
       {/* CENTER J.A.R.V.I.S */}
       <div
@@ -755,11 +737,17 @@ export default function Home() {
           flex-col
           items-center
           justify-center
-          pb-36
+          pt-20
+          pb-44
+          md:pt-0
+          md:pb-36
           z-10
         "
       >
-        <div onClick={startListening} className="cursor-pointer">
+        <div
+          onClick={startListening}
+          className="cursor-pointer origin-center scale-[0.7] sm:scale-90 lg:scale-100"
+        >
           <VoiceOrb state={state} />
         </div>
       </div>
@@ -768,12 +756,14 @@ export default function Home() {
       <div
         className="
           absolute
-          bottom-6
+          bottom-4
+          md:bottom-6
           left-1/2
           -translate-x-1/2
           w-full
           max-w-2xl
-          px-6
+          px-3
+          md:px-6
           z-30
         "
       >
@@ -784,8 +774,10 @@ export default function Home() {
             bg-black/40
             backdrop-blur-md
             rounded-xl
-            px-5
-            py-4
+            px-4
+            py-3
+            md:px-5
+            md:py-4
             shadow-[0_0_30px_rgba(6,182,212,0.08)]
           "
         >
@@ -797,7 +789,7 @@ export default function Home() {
             </span>
           </div>
 
-          <p className="font-mono text-sm text-white/80 min-h-[22px]">
+          <p className="font-mono text-xs md:text-sm text-white/80 min-h-[22px] max-h-[28dvh] overflow-y-auto">
             {transcript ? `> ${transcript}` : "> Awaiting command..."}
           </p>
         </div>
@@ -806,6 +798,8 @@ export default function Home() {
       {/* BOTTOM STATUS */}
       <div
         className="
+          hidden
+          md:block
           absolute
           bottom-3
           left-6
@@ -822,6 +816,8 @@ export default function Home() {
       {/* LANGUAGE */}
       <div
         className="
+          hidden
+          md:block
           absolute
           bottom-3
           right-6
