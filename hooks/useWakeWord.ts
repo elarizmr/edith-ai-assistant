@@ -25,10 +25,6 @@ export function useWakeWord({
     "jarvis",
    
     "jarves",
-    "garvis",
-    "charvis",
-    "jarvus",
-    "harvis",
   ],
   cooldownMs = 3000,
 }: UseWakeWordOptions) {

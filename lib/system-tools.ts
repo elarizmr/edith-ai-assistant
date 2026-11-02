@@ -1,14 +1,45 @@
-import { exec } from "child_process";
+import { exec, execFile, spawn } from "child_process";
 import { promisify } from "util";
 import { addMemory } from "@/lib/memory";
 import { addEvent } from "@/lib/calendar";
+import { searchPlaces, isLead, saveLeads } from "@/lib/leads";
+import { getDb } from "@/lib/mongodb";
+import { findJobs } from "@/lib/jobs";
+import { prepareNextApplication } from "@/lib/apply";
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 
 export const USER_ID = process.env.JARVIS_USER_ID || "elariz";
 
+const DAILY_LIMIT = 25;
 
+// Mesaj mətnini buradan dəyişə bilərsən
+function buildWhatsappText(name: string) {
+  return `Salam! Mən Elariz, veb developeram. ${name} üçün internetdə öz saytınızı görmədim. İstəsəniz, sizə sadə və sərfəli bir sayt hazırlaya bilərəm, əvvəlcə nümunə göndərim? Maraqlanmırsınızsa, yazın, bir daha narahat etməyəcəm.`;
+}
+
+// "0557902169 - Hesen, 0504615085" -> "994557902169"
+function normalizePhone(raw: string): string | null {
+  const m = String(raw).match(/\+?\d[\d\s\-()]{7,}\d/);
+  let d = (m?.[0] ?? String(raw)).replace(/\D/g, "");
+  if (d.startsWith("994")) d = d.slice(3);
+  d = d.replace(/^0+/, "");
+  return d.length === 9 ? "994" + d : null;
+}
+
+const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// Mətni macOS clipboard-a kopyalayır
+function copyToClipboard(text: string) {
+  return new Promise<void>((resolve, reject) => {
+    const p = spawn("pbcopy");
+    p.on("error", reject);
+    p.on("close", () => resolve());
+    p.stdin.end(text);
+  });
+}
 
 const DANGEROUS_PATTERNS: RegExp[] = [
   /rm\s+-rf\s+\/(?!\S)/i, // rm -rf /
@@ -106,7 +137,7 @@ export const toolDeclarations = [
   {
     name: "remember_fact",
     description:
-      "Elariz haqqında bir fakt, üstünlük və ya qeydi uzunmüddətli yaddaşa yazır. İstifadəçi 'bunu yadında saxla', 'unutma ki...', 'mən ... sevirəm' kimi bir şey desə, bu tool-u çağır.",
+      "Elariz haqqında bir fakt, üstünlük və ya qeydi uzunmüddətli yaddaşa yazır. İstifadəçi 'bunu yadında saxla', 'unutma ki...', 'mən ... sevirəm' kimibir şey desə, bu tool-u çağır.",
     parameters: {
       type: "object",
       properties: {
@@ -138,6 +169,61 @@ export const toolDeclarations = [
       },
       required: ["title", "date"],
     },
+  },
+  {
+    name: "find_leads",
+    description:
+      "Xəritə məlumatından (OpenStreetMap) saytı olmayan və ya yalnız Instagram/Facebook-u olan, telefonu olan bizneslər tapır və bazaya yazır. İstifadəçi 'Bakıda saytı olmayan bərbərxanaları tap', 'lead axtar' kimi bir şey desə, bu tool-u çağır. Kateqoriya nümunələri: bərbərxana, gözəllik salonu, restoran, kafe, aptek, diş klinikası, avtoyuma, otel, geyim mağazası, avto servis, idman zalı.",
+    parameters: {
+      type: "object",
+      properties: {
+        category: {
+          type: "string",
+          description: "Biznes kateqoriyası, məs: 'bərbərxana'",
+        },
+        city: {
+          type: "string",
+          description: "Şəhər adı, məs: 'Bakı'. Verilməyibsə 'Bakı' istifadə et.",
+        },
+      },
+      required: ["category"],
+    },
+  },
+  {
+    name: "whatsapp_next_lead",
+    description:
+      "Bazadakı növbəti 'new' statuslu lead üçün WhatsApp mesajı hazırlayır və wa.me linkini brauzerdə açır. Elariz özü Göndər düyməsini basır. İstifadəçi 'növbəti lead-ə yaz', 'WhatsApp ilə yaz', 'lead-ə mesaj hazırla' kimi bir şey desə, bu tool-u çağır.",
+    parameters: {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+          description:
+            "Müəyyən lead-in adı (opsional). Verilməsə növbəti 'new' lead seçilir.",
+        },
+      },
+    },
+  },
+  {
+    name: "find_jobs",
+    description:
+      "Remotive-dən iş elanlarını tapır, CV-yə uyğunluğa görə bal verir və bazaya yazır. İstifadəçi 'iş tap', 'iş elanlarına bax', 'developer işi axtar' desə, bu tool-u çağır.",
+    parameters: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "Axtarış sözü, məs: 'react developer'",
+        },
+      },
+      required: ["query"],
+    },
+  },
+  {
+    name: "next_job_application",
+    description:
+      "Ən yüksək ballı elan üçün motivasiya məktubu hazırlayır, məktubu clipboard-a kopyalayır və elanın səhifəsini brauzerdə açır. Elariz özü yapışdırıb göndərir. İstifadəçi 'növbəti elana müraciət hazırla', 'müraciət et' desə, bu tool-u çağır.",
+    parameters: { type: "object", properties: {} },
   },
 ];
 
@@ -199,6 +285,95 @@ export async function executeTool(name: string, args: any): Promise<string> {
         }
         await addEvent(USER_ID, args.title, date, args.description);
         return `Təqvimə əlavə etdim: "${args.title}" — ${date.toLocaleString("az-AZ")}`;
+      }
+
+      case "find_leads": {
+        const category = String(args.category || "").trim();
+        const city = String(args.city || "Bakı").trim();
+        if (!category) return "Kateqoriya deyilməyib, axtarış edilmədi.";
+
+        const places = await searchPlaces(category, city);
+        const leads = places.filter(isLead);
+        const added = await saveLeads(leads, category, city);
+
+        if (leads.length === 0) {
+          return `${city} üzrə ${places.length} məkan tapıldı, amma saytı olmayan və telefonu olan lead çıxmadı.`;
+        }
+
+        const firstPhone = (s: string) =>
+          String(s).match(/\+?\d[\d\s]{7,}\d/)?.[0]?.trim() ?? s;
+
+        const list = leads
+          .slice(0, 8)
+          .map(
+            (p: any) =>
+              `${p.displayName?.text} (${firstPhone(
+                p.internationalPhoneNumber ?? p.nationalPhoneNumber
+              )})`
+          )
+          .join("; ");
+
+        return `${city} üzrə ${places.length} məkan baxıldı, ${leads.length} lead tapıldı, ${added} yeni bazaya yazıldı. Bəziləri: ${list}.`;
+      }
+
+      case "whatsapp_next_lead": {
+        const db = await getDb();
+        const col = db.collection("leads");
+
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        const sentToday = await col.countDocuments({
+          "messages.at": { $gte: startOfDay },
+        });
+        if (sentToday >= DAILY_LIMIT) {
+          return `Bu gün artıq ${DAILY_LIMIT} mesaj hazırlanıb, limit dolub. Sabah davam edərik.`;
+        }
+
+        const filter: any = args.name
+          ? {
+              name: { $regex: escapeRegex(String(args.name)), $options: "i" },
+              status: { $ne: "do_not_contact" },
+            }
+          : { status: "new" };
+
+        const lead = await col.findOne(filter, { sort: { createdAt: 1 } });
+        if (!lead) return "Yazılacaq yeni lead qalmayıb.";
+
+        const phone = normalizePhone(lead.phone);
+        if (!phone) {
+          await col.updateOne({ _id: lead._id }, { $set: { status: "bad_phone" } });
+          return `${lead.name} üçün düzgün nömrə tapılmadı, onu keçdim.`;
+        }
+
+        const text = buildWhatsappText(lead.name);
+        await execAsync(
+          `open "https://wa.me/${phone}?text=${encodeURIComponent(text)}"`
+        );
+        await col.updateOne(
+          { _id: lead._id },
+          {
+            $set: { status: "contacted" },
+            $push: {
+              messages: { at: new Date(), channel: "whatsapp", direction: "out", text },
+            },
+          } as any
+        );
+        return `${lead.name} üçün WhatsApp açıldı, mesaj hazırdır. Göndər düyməsini özün bas.`;
+      }
+
+      case "find_jobs": {
+        const query = String(args.query || "").trim();
+        if (!query) return "Axtarış sözü deyilməyib.";
+        const added = await findJobs(query);
+        return `${added} uyğun elan tapıldı və bazaya yazıldı.`;
+      }
+
+      case "next_job_application": {
+        const app = await prepareNextApplication();
+        if (!app) return "Hazırlanacaq yeni elan qalmayıb. Əvvəl iş axtarışı et.";
+        await copyToClipboard(app.coverLetter);
+        await execFileAsync("open", [app.url]);
+        return `${app.company} şirkətinin ${app.title} elanı açıldı, uyğunluq balı ${app.score}. Məktub clipboard-dadır, yapışdırıb özün göndər.`;
       }
 
       default:

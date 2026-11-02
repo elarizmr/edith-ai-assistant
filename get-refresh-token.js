@@ -24,6 +24,7 @@ const authUrl = oauth2Client.generateAuthUrl({
   prompt: "consent", // hər dəfə yeni refresh token verməsi üçün
   scope: [
     "https://www.googleapis.com/auth/gmail.readonly", // maillərı oxumaq
+      "https://www.googleapis.com/auth/gmail.send", // müraciət emaili göndərmək
     "https://www.googleapis.com/auth/calendar", // təqvimi oxumaq və yazmaq
   ],
 });

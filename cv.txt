@@ -1,0 +1,52 @@
+Elariz Recebov
+Front-End Developer
+elarizreceb@gmail.com +994 50 508 32 81 Baku, Azerbaijan linkedin.com/in/elariz-recebov
+github.com/elarizmr elariz4.vercel.app
+Summary
+Front-End Developer with 1+ year of freelance experience building responsive web applications with React,
+Next.js, and TypeScript. Comfortable with the MERN stack, including REST APIs with Node.js, Express.js, and
+MongoDB. Delivered e-commerce platforms and news portals integrated with headless CMS (Strapi, Sanity).
+Focused on performance, clean code, and pixel-perfect implementation of Figma designs.
+Professional Experience
+Freelance Front-End Developer, Self-Employed
+• Built responsive web applications, e-commerce platforms, and news portals for clients
+using React.js, Next.js, and TypeScript.
+• Implemented pixel-perfect, responsive pages from Figma designs.
+• Integrated third-party APIs and headless CMS platforms (Strapi, Sanity).
+• Improved loading speed with image optimization and code splitting.
+Education
+Front-End Development Course, Code Academy 2025 – Present
+Remote
+2025 – 2026
+Baku, Azerbaijan
+2020 – 2024
+Baku, Azerbaijan
+College Diploma, College of Western Caspian University
+Software Engineering for Automated Systems and Computing
+Skills
+Languages & Core
+JavaScript (ES6+), TypeScript, HTML5, CSS3
+Back-End & Databases
+Node.js, Express.js, MongoDB, Mongoose, REST APIs,
+Firebase
+Tools & Workflow
+Git, GitHub, Figma, Postman, Vercel, Netlify
+Languages
+Azerbaijani
+Native
+English
+Elementary
+Projects
+Front-End
+React.js, Next.js (App Router, SSR), Redux Toolkit,
+TanStack Query
+CMS
+Strapi, Sanity
+Styling & UI
+Tailwind CSS, Bootstrap, Shadcn/ui
+Russian
+Beginner
+3D Portfolio Website⁠ , Personal Project
+• Designed and built an interactive 3D portfolio website using React, Vite, and Three.js.
+• Showcases my projects with smooth animations and a responsive layout across devices.
+• Deployed on Vercel.
